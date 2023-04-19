@@ -23,7 +23,7 @@ export function createImagesMarkup(images) {
             <span>${downloads}</span>
           </li>
         </ul>
-    </div>`
+      </div>`
     )
     .join('');
 }

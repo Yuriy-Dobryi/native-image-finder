@@ -56,6 +56,9 @@ input {
   background-position: center;
   border: none;
 }
+.submit-btn:hover {
+  cursor: pointer;
+}
 
 .gallery {
   display: flex;
