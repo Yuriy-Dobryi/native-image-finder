@@ -1,21 +1,29 @@
 export function createImagesMarkup(images) {
-  images.map(
-    image => `<div class="photo-card">
-  <img src="" alt="" loading="lazy" />
-  <div class="info">
-    <p class="info-item">
-      <b>Likes</b>
-    </p>
-    <p class="info-item">
-      <b>Views</b>
-    </p>
-    <p class="info-item">
-      <b>Comments</b>
-    </p>
-    <p class="info-item">
-      <b>Downloads</b>
-    </p>
-  </div>
-</div>`
-  );
+  return images
+    .map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads, }) =>
+      `<div class="photo-card">
+        <a href="${largeImageURL}">
+          <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+        </a>
+        <ul class="info">
+          <li>
+            <b>Likes</b>
+            <span>${likes}</span>
+          </li>
+          <li>
+            <b>Views</b>
+            <span>${views}</span>
+          </li>
+          <li>
+            <b>Comments</b>
+            <span>${comments}</span>
+          </li>
+          <li>
+            <b>Downloads</b>
+            <span>${downloads}</span>
+          </li>
+        </ul>
+    </div>`
+    )
+    .join('');
 }
