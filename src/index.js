@@ -33,9 +33,7 @@ function onFormSubmit(e) {
   pixabayApiService.getData()
     .then(({ totalHits, hits }) => {
       if (totalHits === 0) {
-        throw Error(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
+        throw Error('Sorry, there are no images matching your search query. Please try again.');
       }
 
       Notify.success(`Hooray! We found ${totalHits} images.`);
@@ -56,9 +54,15 @@ function changeLoadMoreBtnDisplay(value) {
 function onLoadMoreBtn() {
   pixabayApiService.getData()
     .then(({ hits }) => {
+      if (hits.length === 0) {
+        changeLoadMoreBtnDisplay('none');
+        throw Error(`We're sorry, but you've reached the end of search results.`);
+      }
+
       galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
       simplelightbox.refresh();
     })
+
     .catch(error => {
       Notify.failure(error.message);
     });
