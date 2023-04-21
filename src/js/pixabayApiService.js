@@ -6,7 +6,7 @@ export class PixabayApiService {
     this.page = 1;
   }
 
-  getData() {
+  async getData() {
     const config = {
       params: {
         key: `35543828-6c73cc5fdea5a14873063547d`,
@@ -20,10 +20,9 @@ export class PixabayApiService {
     };
     const URL = `https://pixabay.com/api/`;
 
-    return axios.get(URL, config).then(response => {
-      this.incrementPage();
-      return response.data;
-    });
+    const response = await axios.get(URL, config);
+    this.incrementPage();
+    return response.data;
   }
 
   incrementPage() {

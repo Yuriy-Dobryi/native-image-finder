@@ -2,6 +2,7 @@ import 'modern-normalize';
 import { Notify } from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+import Debounce from 'lodash.debounce';
 
 import { PixabayApiService } from './js/pixabayApiService.js';
 import { createImagesMarkup } from './js/createImagesMarkup.js';
@@ -13,57 +14,93 @@ const galleryRef = document.querySelector('.gallery');
 const formRef = document.getElementById('search-form');
 formRef.addEventListener('submit', onFormSubmit); 
 
-const loadMoreBtn = document.querySelector('.load-more');
-changeLoadMoreBtnDisplay('none');
-loadMoreBtn.addEventListener('click', onLoadMoreBtn);
+const loadMoreBtnRef = document.querySelector('.load-more');
+changeBtnDisplay(loadMoreBtnRef, 'none');
+loadMoreBtnRef.addEventListener('click', onLoadMoreBtnRef);
 
-function onFormSubmit(e) {
+const moveTopBtnRef = document.querySelector('.move-top');
+changeBtnDisplay(moveTopBtnRef, 'none');
+
+moveTopBtnRef.addEventListener('click', onMoveTopBtnRef);
+
+async function onFormSubmit(e) {
   e.preventDefault();
   pixabayApiService.searchQuery =
     e.currentTarget.elements.searchQuery.value.trim();
-  
+
   if (pixabayApiService.searchQuery === '') {
     return Notify.info('Field must not be empty');
   }
 
   galleryRef.innerHTML = '';
-  changeLoadMoreBtnDisplay('none');
+  changeBtnDisplay(loadMoreBtnRef, 'none');
   pixabayApiService.resetPage();
-  
-  pixabayApiService.getData()
-    .then(({ totalHits, hits }) => {
-      if (totalHits === 0) {
-        throw Error('Sorry, there are no images matching your search query. Please try again.');
-      }
 
-      Notify.success(`Hooray! We found ${totalHits} images.`);
-      galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
-      simplelightbox.refresh();
-      changeLoadMoreBtnDisplay('block');
-    })
+  try {
+    const { totalHits, hits } = await pixabayApiService.getData();
+    if (totalHits === 0) {
+      throw Error(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    }
 
-    .catch(error => {
-      Notify.failure(error.message);
-    });
+    Notify.success(`Hooray! We found ${totalHits} images.`);
+    galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
+    simplelightbox.refresh();
+    changeBtnDisplay(loadMoreBtnRef, 'block');
+  } catch (error) {
+    Notify.failure(error.message);
+  }
 }
 
-function changeLoadMoreBtnDisplay(value) {
-  loadMoreBtn.style.display = `${value}`;
+function changeBtnDisplay(btn, value) {
+  btn.style.display = `${value}`;
 }
 
-function onLoadMoreBtn() {
-  pixabayApiService.getData()
-    .then(({ hits }) => {
-      if (hits.length === 0) {
-        changeLoadMoreBtnDisplay('none');
-        throw Error(`We're sorry, but you've reached the end of search results.`);
-      }
+async function onLoadMoreBtnRef() {
+  try {
+    const { hits } = await pixabayApiService.getData();
+    if (hits.length === 0) {
+      changeBtnDisplay(loadMoreBtnRef, 'none');
+      throw Error(`We're sorry, but you've reached the end of search results.`);
+    }
 
-      galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
-      simplelightbox.refresh();
-    })
-
-    .catch(error => {
-      Notify.failure(error.message);
-    });
+    galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
+    smoothScrolling();
+    simplelightbox.refresh();
+  } catch (error) {
+    Notify.failure(error.message);
+  }
 }
+
+function onMoveTopBtnRef() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+}
+
+function smoothScrolling() {
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
+
+const MIN_DELAY_DEBOUNCE = 500;
+const MIN_SCROLL_POSITION = 3000;
+window.addEventListener(
+  'scroll',
+  Debounce(() => {
+    const currentPosition = window.pageYOffset;
+
+    changeBtnDisplay(moveTopBtnRef,
+      currentPosition > MIN_SCROLL_POSITION
+        ? 'block'
+        : 'none')
+  }, MIN_DELAY_DEBOUNCE)
+);
