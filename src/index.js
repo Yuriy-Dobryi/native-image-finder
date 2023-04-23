@@ -9,6 +9,8 @@ import { createImagesMarkup } from './js/createImagesMarkup.js';
 
 const MIN_SCROLL_POSITION = 3000;
 const MIN_DELAY_DEBOUNCE = 500;
+let galleryHalfHeight;
+let isFirstSubmit = true;
 const pixabayApiService = new PixabayApiService;
 const simplelightbox = new SimpleLightbox('.gallery a');
 
@@ -38,10 +40,14 @@ async function onFormSubmit(e) {
         'Sorry, there are no images matching your search query. Please try again.'
       );
     }
-    
+
     REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     Notify.success(`Hooray! We found ${totalHits} images.`);
     simplelightbox.refresh();
+    if (isFirstSubmit) {
+      galleryHalfHeight = Math.floor(REF.gallery.offsetHeight / 2);
+      isFirstSubmit = false;
+    }
     changeBtnDisplay(REF.loadMoreBtn, 'block');
   } catch (error) {
     Notify.failure(error.message);
@@ -89,11 +95,12 @@ function smoothScrolling() {
 }
 
 function updateMoveTopBtnDisplayByScroll() {
+  // хочу щоб current брався саме від позиції скролу у галереї, а не від всієї сторінки
   const currentPosition = window.pageYOffset;
 
   changeBtnDisplay(
     REF.moveTopBtn,
-    currentPosition > MIN_SCROLL_POSITION ? 'block' : 'none'
+    currentPosition > galleryHalfHeight ? 'block' : 'none'
   );
 }
 
