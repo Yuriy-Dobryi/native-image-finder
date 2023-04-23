@@ -89,12 +89,11 @@ function smoothScrolling() {
 }
 
 function updateMoveTopBtnDisplayByScroll() {
-  const { height: galleryHeight } = REF.gallery.getBoundingClientRect();
   const currentPosition = window.pageYOffset;
 
   changeBtnDisplay(
     REF.moveTopBtn,
-    currentPosition > galleryHeight / 2 ? 'block' : 'none'
+    currentPosition > MIN_SCROLL_POSITION ? 'block' : 'none'
   );
 }
 
