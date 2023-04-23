@@ -27,3 +27,4 @@ export function createImagesMarkup(images) {
     )
     .join('');
 }
+

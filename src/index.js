@@ -7,33 +7,28 @@ import Debounce from 'lodash.debounce';
 import { PixabayApiService } from './js/pixabayApiService.js';
 import { createImagesMarkup } from './js/createImagesMarkup.js';
 
+const MIN_SCROLL_POSITION = 3000;
+const MIN_DELAY_DEBOUNCE = 500;
 const pixabayApiService = new PixabayApiService;
 const simplelightbox = new SimpleLightbox('.gallery a');
 
-const galleryRef = document.querySelector('.gallery');
-const formRef = document.getElementById('search-form');
-formRef.addEventListener('submit', onFormSubmit); 
-
-const loadMoreBtnRef = document.querySelector('.load-more');
-changeBtnDisplay(loadMoreBtnRef, 'none');
-loadMoreBtnRef.addEventListener('click', onLoadMoreBtnRef);
-
-const moveTopBtnRef = document.querySelector('.move-top');
-changeBtnDisplay(moveTopBtnRef, 'none');
-
-moveTopBtnRef.addEventListener('click', onMoveTopBtnRef);
+const REF = {
+  form: document.getElementById('search-form'),
+  gallery: document.querySelector('.gallery'),
+  moveTopBtn: document.querySelector('.move-top'),
+  loadMoreBtn: document.querySelector('.load-more'),
+};
 
 async function onFormSubmit(e) {
   e.preventDefault();
   pixabayApiService.searchQuery =
     e.currentTarget.elements.searchQuery.value.trim();
-
   if (pixabayApiService.searchQuery === '') {
     return Notify.info('Field must not be empty');
   }
 
-  galleryRef.innerHTML = '';
-  changeBtnDisplay(loadMoreBtnRef, 'none');
+  REF.gallery.innerHTML = '';
+  changeBtnDisplay(REF.loadMoreBtn, 'none');
   pixabayApiService.resetPage();
 
   try {
@@ -43,29 +38,29 @@ async function onFormSubmit(e) {
         'Sorry, there are no images matching your search query. Please try again.'
       );
     }
-
+    
+    REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     Notify.success(`Hooray! We found ${totalHits} images.`);
-    galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     simplelightbox.refresh();
-    changeBtnDisplay(loadMoreBtnRef, 'block');
+    changeBtnDisplay(REF.loadMoreBtn, 'block');
   } catch (error) {
     Notify.failure(error.message);
   }
 }
 
 function changeBtnDisplay(btn, value) {
-  btn.style.display = `${value}`;
+  btn.style.display = value;
 }
 
-async function onLoadMoreBtnRef() {
+async function onLoadMoreBtn() {
   try {
     const { hits } = await pixabayApiService.getData();
     if (hits.length === 0) {
-      changeBtnDisplay(loadMoreBtnRef, 'none');
+      changeBtnDisplay(REF.loadMoreBtn, 'none');
       throw Error(`We're sorry, but you've reached the end of search results.`);
     }
 
-    galleryRef.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
+    REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     smoothScrolling();
     simplelightbox.refresh();
   } catch (error) {
@@ -73,7 +68,7 @@ async function onLoadMoreBtnRef() {
   }
 }
 
-function onMoveTopBtnRef() {
+function onMoveTopBtn() {
   window.scrollTo({
     top: 0,
     behavior: 'smooth',
@@ -91,16 +86,20 @@ function smoothScrolling() {
   });
 }
 
-const MIN_DELAY_DEBOUNCE = 500;
-const MIN_SCROLL_POSITION = 3000;
+function updateMoveTopBtnDisplayByScroll() {
+  const currentPosition = window.pageYOffset;
+
+  changeBtnDisplay(
+    REF.moveTopBtn,
+    currentPosition > MIN_SCROLL_POSITION ? 'block' : 'none'
+  );
+}
+
 window.addEventListener(
   'scroll',
-  Debounce(() => {
-    const currentPosition = window.pageYOffset;
-
-    changeBtnDisplay(moveTopBtnRef,
-      currentPosition > MIN_SCROLL_POSITION
-        ? 'block'
-        : 'none')
-  }, MIN_DELAY_DEBOUNCE)
+  Debounce(updateMoveTopBtnDisplayByScroll, MIN_DELAY_DEBOUNCE)
 );
+
+REF.form.addEventListener('submit', onFormSubmit);
+REF.loadMoreBtn.addEventListener('click', onLoadMoreBtn);
+REF.moveTopBtn.addEventListener('click', onMoveTopBtn);

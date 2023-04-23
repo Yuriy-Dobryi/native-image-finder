@@ -17,7 +17,7 @@ export class PixabayApiService {
         page: this.page,
         per_page: 40,
       },
-    };
+    };  
     const URL = `https://pixabay.com/api/`;
 
     const response = await axios.get(URL, config);
