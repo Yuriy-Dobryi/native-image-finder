@@ -54,17 +54,19 @@ function changeBtnDisplay(btn, value) {
 
 async function onLoadMoreBtn() {
   try {
-    const { hits } = await pixabayApiService.getData();
-    if (hits.length === 0) {
-      changeBtnDisplay(REF.loadMoreBtn, 'none');
-      throw Error(`We're sorry, but you've reached the end of search results.`);
-    }
+    const { hits, totalHits } = await pixabayApiService.getData();
 
     REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     smoothScrolling();
     simplelightbox.refresh();
+    
+    const galleryImagesCount = REF.gallery.children.length;
+    if (totalHits - galleryImagesCount <= 0) {
+      changeBtnDisplay(REF.loadMoreBtn, 'none');
+      throw Error(`We're sorry, but you've reached the end of search results.`);
+    }
   } catch (error) {
-    Notify.failure(error.message);
+    Notify.warning(error.message);
   }
 }
 
@@ -76,10 +78,10 @@ function onMoveTopBtn() {
 }
 
 function smoothScrolling() {
-  const { height: cardHeight } = document
-    .querySelector('.gallery')
-    .firstElementChild.getBoundingClientRect();
-
+  const { height: cardHeight } = REF.gallery
+    .firstElementChild
+    .getBoundingClientRect();
+  
   window.scrollBy({
     top: cardHeight * 2,
     behavior: 'smooth',
@@ -87,11 +89,12 @@ function smoothScrolling() {
 }
 
 function updateMoveTopBtnDisplayByScroll() {
+  const { height: galleryHeight } = REF.gallery.getBoundingClientRect();
   const currentPosition = window.pageYOffset;
 
   changeBtnDisplay(
     REF.moveTopBtn,
-    currentPosition > MIN_SCROLL_POSITION ? 'block' : 'none'
+    currentPosition > galleryHeight / 2 ? 'block' : 'none'
   );
 }
 
