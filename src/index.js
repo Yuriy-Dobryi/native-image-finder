@@ -44,11 +44,12 @@ async function onFormSubmit(e) {
     REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     Notify.success(`Hooray! We found ${totalHits} images.`);
     simplelightbox.refresh();
+    loadMoreBtnConfiguration(totalHits);
+
     if (isFirstSubmit) {
       galleryHalfHeight = Math.floor(REF.gallery.offsetHeight / 2);
       isFirstSubmit = false;
     }
-    changeBtnDisplay(REF.loadMoreBtn, 'block');
   } catch (error) {
     Notify.failure(error.message);
   }
@@ -65,15 +66,19 @@ async function onLoadMoreBtn() {
     REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     smoothScrolling();
     simplelightbox.refresh();
-    
-    const galleryImagesCount = REF.gallery.children.length;
-    if (totalHits - galleryImagesCount <= 0) {
-      changeBtnDisplay(REF.loadMoreBtn, 'none');
-      throw Error(`We're sorry, but you've reached the end of search results.`);
-    }
+    loadMoreBtnConfiguration(totalHits);
   } catch (error) {
     Notify.warning(error.message);
   }
+}
+
+function loadMoreBtnConfiguration(totalHits) {
+  const galleryImagesCount = REF.gallery.children.length;
+  if (totalHits - galleryImagesCount <= 0) {
+    changeBtnDisplay(REF.loadMoreBtn, 'none');
+    throw Error(`We're sorry, but you've reached the end of search results.`);
+  }
+  changeBtnDisplay(REF.loadMoreBtn, 'block');
 }
 
 function onMoveTopBtn() {
