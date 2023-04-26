@@ -7,19 +7,18 @@ import Debounce from 'lodash.debounce';
 import { PixabayApiService } from './js/pixabayApiService.js';
 import { createImagesMarkup } from './js/createImagesMarkup.js';
 
-const MIN_SCROLL_POSITION = 3000;
-const MIN_DELAY_DEBOUNCE = 500;
-let galleryHalfHeight;
-let isFirstSubmit = true;
 const pixabayApiService = new PixabayApiService;
 const simplelightbox = new SimpleLightbox('.gallery a');
+const MIN_DEBOUNCE_DELAY = 500;
+const MIN_CURSOR_POSITION = 3000;
 
 const REF = {
   form: document.getElementById('search-form'),
   gallery: document.querySelector('.gallery'),
   moveTopBtn: document.querySelector('.move-top'),
-  loadMoreBtn: document.querySelector('.load-more'),
 };
+
+const pageObserver = new IntersectionObserver(loadNextImages);
 
 async function onFormSubmit(e) {
   e.preventDefault();
@@ -30,7 +29,6 @@ async function onFormSubmit(e) {
   }
 
   REF.gallery.innerHTML = '';
-  changeBtnDisplay(REF.loadMoreBtn, 'none');
   pixabayApiService.resetPage();
 
   try {
@@ -44,16 +42,8 @@ async function onFormSubmit(e) {
     REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
     Notify.success(`Hooray! We found ${totalHits} images.`);
     simplelightbox.refresh();
-    
-    if (canLoadNextImages(totalHits)) {
-      changeBtnDisplay(REF.loadMoreBtn, 'block');
-    } else {
-      changeBtnDisplay(REF.loadMoreBtn, 'none');
-    }
-    if (isFirstSubmit) {
-      galleryHalfHeight = Math.floor(REF.gallery.offsetHeight / 2);
-      isFirstSubmit = false;
-    }
+    pageObserver.observe(REF.gallery.lastElementChild);
+
   } catch (error) {
     Notify.failure(error.message);
   }
@@ -63,28 +53,32 @@ function changeBtnDisplay(btn, value) {
   btn.style.display = value;
 }
 
-async function onLoadMoreBtn() {
-  try {
-    const { hits, totalHits } = await pixabayApiService.getData();
+function loadNextImages(entries) {
+  entries.forEach(async entry => {
+    if (entry.isIntersecting) {
+      pageObserver.disconnect();
+      try {
+        const { hits, totalHits } = await pixabayApiService.getData();
+        if (thereIsNoImagesMore(totalHits)) {
+          throw Error(
+            `We're sorry, but you've reached the end of search results.`
+          );
+        }
 
-    REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
-    smoothScrolling();
-    simplelightbox.refresh();
-
-    if (canLoadNextImages(totalHits)) {
-      changeBtnDisplay(REF.loadMoreBtn, 'block');
-    } else {
-      changeBtnDisplay(REF.loadMoreBtn, 'none');
-      throw Error(`We're sorry, but you've reached the end of search results.`);
+        REF.gallery.insertAdjacentHTML('beforeend', createImagesMarkup(hits));
+        smoothScrolling();
+        simplelightbox.refresh();
+        pageObserver.observe(REF.gallery.lastElementChild);
+      } catch (error) {
+        Notify.warning(error.message);
+      }
     }
-  } catch (error) {
-    Notify.warning(error.message);
-  }
+  });
 }
 
-function canLoadNextImages(totalHits) {
+function thereIsNoImagesMore(totalHits) {
   const galleryImagesCount = REF.gallery.children.length;
-  return totalHits - galleryImagesCount > 0;
+  return totalHits - galleryImagesCount <= 0;
 }
 
 function onMoveTopBtn() {
@@ -106,20 +100,18 @@ function smoothScrolling() {
 }
 
 function updateMoveTopBtnDisplayByScroll() {
-  // хочу щоб current брався саме від позиції скролу у галереї, а не від всієї сторінки
-  const currentPosition = window.pageYOffset;
+  const currentCursorPosition = window.pageYOffset;
 
   changeBtnDisplay(
     REF.moveTopBtn,
-    currentPosition > galleryHalfHeight ? 'block' : 'none'
+    currentCursorPosition > MIN_CURSOR_POSITION ? 'block' : 'none'
   );
 }
 
 window.addEventListener(
   'scroll',
-  Debounce(updateMoveTopBtnDisplayByScroll, MIN_DELAY_DEBOUNCE)
+  Debounce(updateMoveTopBtnDisplayByScroll, MIN_DEBOUNCE_DELAY)
 );
 
 REF.form.addEventListener('submit', onFormSubmit);
-REF.loadMoreBtn.addEventListener('click', onLoadMoreBtn);
 REF.moveTopBtn.addEventListener('click', onMoveTopBtn);
