@@ -49,10 +49,6 @@ async function onFormSubmit(e) {
   }
 }
 
-function changeBtnDisplay(btn, value) {
-  btn.style.display = value;
-}
-
 function loadNextImages(entries) {
   entries.forEach(async entry => {
     if (entry.isIntersecting) {
@@ -97,6 +93,10 @@ function smoothScrolling() {
     top: cardHeight * 2,
     behavior: 'smooth',
   });
+}
+
+function changeBtnDisplay(btn, value) {
+  btn.style.display = value;
 }
 
 function updateMoveTopBtnDisplayByScroll() {
