@@ -2,10 +2,10 @@
   "name": "parcel-project-template",
   "version": "2.0.0",
   "description": "",
-  "homepage": "https://Yuriy-Dobryi.github.io/image-finder",
+  "homepage": "https://Yuriy-Dobryi.github.io/native-image-finder",
   "scripts": {
     "start": "parcel src/*.html",
-    "build": "parcel build src/*.html --public-url /image-finder/"
+    "build": "parcel build src/*.html --public-url /native-image-finder/"
   },
   "repository": {
     "type": "git",
